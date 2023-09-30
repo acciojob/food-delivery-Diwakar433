@@ -1,118 +1,123 @@
 package com.driver.service.impl;
 
-import com.driver.io.entity.FoodEntity;
 import com.driver.io.entity.OrderEntity;
 import com.driver.io.repository.OrderRepository;
-import com.driver.model.request.OrderDetailsRequestModel;
+import com.driver.service.OrderService;
 import com.driver.shared.dto.OrderDto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-public class OrderServiceImpl{
+
+@Service
+public class OrderServiceImpl implements OrderService {
 
     @Autowired
     OrderRepository orderRepository;
-    public OrderDto createOrder(OrderDetailsRequestModel order) {
+
+    @Override
+    public OrderDto createOrder(OrderDto orderDto) {
 
         OrderEntity orderEntity = new OrderEntity();
-        // set data to orderEntity
-        orderEntity.setOrderId(String.valueOf(UUID.randomUUID()));
-        orderEntity.setCost(order.getCost());
-        orderEntity.setItems(order.getItems());
+
+        orderEntity.setOrderId(orderDto.getOrderId());
+        orderEntity.setCost(orderDto.getCost());
+        orderEntity.setItems(orderDto.getItems());
         orderEntity.setStatus(true);
-        orderEntity.setUserId(order.getUserId());
-//        save database
+        orderEntity.setUserId(orderDto.getUserId());
+        orderEntity.setId(orderDto.getId());
+
         OrderEntity savedOrder = orderRepository.save(orderEntity);
 
-        // saveOrder to orderDto
+        OrderDto response = new OrderDto();
 
-        OrderDto orderDto = new OrderDto();
+        response.setCost(savedOrder.getCost());
+        response.setItems(savedOrder.getItems());
+        response.setUserId(savedOrder.getUserId());
+        response.setOrderId(savedOrder.getOrderId());
+        response.setStatus(savedOrder.isStatus());
+        response.setId(savedOrder.getId());
 
-        orderDto.setId(savedOrder.getId());
-        orderDto.setOrderId(savedOrder.getOrderId());
-        orderDto.setCost(savedOrder.getCost());
-        orderDto.setItems(savedOrder.getItems());
-        orderDto.setStatus(savedOrder.isStatus());
-
-        return orderDto;
-
-
+        return response;
     }
 
-    public OrderDto getOrder(String id) throws Exception {
-
-        OrderEntity order = orderRepository.findByOrderId(id);
-
-        if(order == null)
-            throw new Exception("Order Not Found");
-
-        //set to OrderDto
+    @Override
+    public OrderDto getOrderById(String orderId) throws Exception {
+        OrderEntity order = orderRepository.findByOrderId(orderId);
+        if(order == null){
+            return new OrderDto();
+        }
 
         OrderDto orderDto = new OrderDto();
 
         orderDto.setId(order.getId());
         orderDto.setOrderId(order.getOrderId());
+        orderDto.setStatus(order.isStatus());
+        orderDto.setUserId(order.getUserId());
         orderDto.setCost(order.getCost());
         orderDto.setItems(order.getItems());
-        orderDto.setStatus(order.isStatus());
 
         return orderDto;
-
     }
 
-    public OrderDto updateOrder(String id, OrderDetailsRequestModel order) throws Exception {
+    @Override
+    public OrderDto updateOrderDetails(String orderId, OrderDto order) throws Exception {
 
-        OrderEntity orderEntity = orderRepository.findByOrderId(id);
-
-        if(order == null)
-            throw new Exception("Order Not Found");
-
-        //set to OrderDto
-
-        OrderDto orderDto = new OrderDto();
-
-        orderDto.setId(orderEntity.getId());
-        orderDto.setOrderId(orderEntity.getOrderId());
-        orderDto.setCost(orderEntity.getCost());
-        orderDto.setItems(orderEntity.getItems());
-        orderDto.setStatus(orderEntity.isStatus());
-
-        return orderDto;
-
-    }
-
-    public void deleteOrder(String id) throws Exception {
-        try{
-            OrderEntity response = orderRepository.findByOrderId(id);
-            orderRepository.delete(response);
+        OrderEntity oldOrder = orderRepository.findByOrderId(orderId);
+        if(oldOrder == null){
+            return new OrderDto();
         }
-        catch (Exception e){
-            throw new Exception("Food Not Found");
-        }
+
+        oldOrder.setStatus(order.isStatus());
+        oldOrder.setItems(order.getItems());
+        oldOrder.setCost(order.getCost());
+        oldOrder.setUserId(order.getUserId());
+
+        OrderEntity updatedOrder = orderRepository.save(oldOrder);
+
+        OrderDto response = new OrderDto();
+
+        response.setOrderId(updatedOrder.getOrderId());
+        response.setStatus(updatedOrder.isStatus());
+        response.setId(updatedOrder.getId());
+        response.setItems(updatedOrder.getItems());
+        response.setCost(updatedOrder.getCost());
+        response.setUserId(updatedOrder.getUserId());
+
+        return response;
     }
 
+    @Override
+    public void deleteOrder(String orderId) throws Exception {
+
+        OrderEntity order = orderRepository.findByOrderId(orderId);
+        orderRepository.delete(order);
+
+    }
+
+    @Override
     public List<OrderDto> getOrders() {
 
-        List<OrderEntity> orderEntities = (List<OrderEntity>) orderRepository.findAll();
+        Iterable<OrderEntity> orderEntities = orderRepository.findAll();
+        List<OrderDto> ans = new ArrayList<>();
 
-        List<OrderDto> dtosList = new ArrayList<>();
-
-        for (OrderEntity order : orderEntities) {
+        for (OrderEntity orderEntity: orderEntities) {
 
             OrderDto orderDto = new OrderDto();
 
-            orderDto.setId(order.getId());
-            orderDto.setOrderId(order.getOrderId());
-            orderDto.setCost(order.getCost());
-            orderDto.setItems(order.getItems());
-            orderDto.setStatus(order.isStatus());
+            orderDto.setUserId(orderEntity.getUserId());
+            orderDto.setStatus(orderEntity.isStatus());
+            orderDto.setOrderId(orderEntity.getOrderId());
+            orderDto.setItems(orderEntity.getItems());
+            orderDto.setId(orderEntity.getId());
+            orderDto.setCost(orderEntity.getCost());
 
-            dtosList.add(orderDto);
+            ans.add(orderDto);
+
         }
 
-        return dtosList;
+        return ans;
     }
 }

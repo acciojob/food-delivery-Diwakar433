@@ -2,26 +2,27 @@ package com.driver.service.impl;
 
 import com.driver.io.entity.UserEntity;
 import com.driver.io.repository.UserRepository;
-import com.driver.model.request.UserDetailsRequestModel;
+import com.driver.service.UserService;
 import com.driver.shared.dto.UserDto;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-public class UserServiceImpl {
+@Service
+public class UserServiceImpl implements UserService {
 
     @Autowired
     UserRepository userRepository;
-    public UserDto createUser(UserDetailsRequestModel userDetails) {
-
+    @Override
+    public UserDto createUser(UserDto userDto) throws Exception {
         UserEntity userEntity = new UserEntity();
 
-        userEntity.setUserId(String.valueOf(UUID.randomUUID()));
-        userEntity.setFirstName(userDetails.getFirstName());
-        userEntity.setLastName(userDetails.getLastName());
-        userEntity.setEmail(userDetails.getEmail());
+        userEntity.setUserId(userDto.getUserId());
+        userEntity.setFirstName(userDto.getFirstName());
+        userEntity.setLastName(userDto.getLastName());
+        userEntity.setEmail(userDto.getEmail());
 
         UserEntity savedUser = userRepository.save(userEntity);
 
@@ -36,46 +37,83 @@ public class UserServiceImpl {
         return response;
     }
 
-    public UserDto getUserByUserId(String id) throws Exception {
+    @Override
+    public UserDto getUser(String email) throws Exception {
+        UserEntity userEntity = userRepository.findByEmail(email);
 
-        UserEntity user = userRepository.findByUserId(id);
-
-        if(user == null)
-            throw new Exception("User Not Found");
+        if(userEntity == null){
+            return new UserDto();
+        }
 
         UserDto response = new UserDto();
 
-        response.setId(user.getId());
-        response.setUserId(user.getUserId());
-        response.setFirstName(user.getFirstName());
-        response.setLastName(user.getLastName());
-        response.setEmail(user.getEmail());
+        response.setUserId(userEntity.getUserId());
+        response.setId(userEntity.getId());
+        response.setEmail(userEntity.getEmail());
+        response.setFirstName(userEntity.getFirstName());
+        response.setLastName(userEntity.getLastName());
 
         return response;
     }
 
-    public UserDto updateUser(String id, UserDetailsRequestModel userDetails) throws Exception {
+    @Override
+    public UserDto getUserByUserId(String userId) throws Exception {
+        UserEntity userEntity = userRepository.findByUserId(userId);
+        if(userEntity == null){
+            return new UserDto();
+        }
 
-        UserEntity user = userRepository.findByUserId(id);
-
-        if(user == null)
-            throw new Exception("User Not Found");
         UserDto response = new UserDto();
 
-        response.setUserId(id);
-        response.setFirstName(userDetails.getFirstName());
-        response.setLastName(userDetails.getLastName());
-        response.setEmail(userDetails.getEmail());
+        response.setUserId(userEntity.getUserId());
+        response.setId(userEntity.getId());
+        response.setEmail(userEntity.getEmail());
+        response.setFirstName(userEntity.getFirstName());
+        response.setLastName(userEntity.getLastName());
 
         return response;
     }
 
-    public void deleteUser(String id) {
-        UserEntity userEntity = userRepository.findByUserId(id);
+    @Override
+    public UserDto updateUser(String userId, UserDto user) throws Exception {
+
+        UserEntity userEntity = userRepository.findByUserId(userId);
+
+        if(userEntity == null){
+            return new UserDto();
+        }
+
+        userEntity.setFirstName(user.getFirstName());
+        userEntity.setLastName(user.getLastName());
+        userEntity.setEmail(user.getEmail());
+
+        UserEntity updatedUser = userRepository.save(userEntity);
+
+        UserDto response = new UserDto();
+
+        response.setUserId(updatedUser.getUserId());
+        response.setId(updatedUser.getId());
+        response.setEmail(updatedUser.getEmail());
+        response.setFirstName(updatedUser.getFirstName());
+        response.setLastName(updatedUser.getLastName());
+
+        return response;
+
+
+
+    }
+
+    @Override
+    public void deleteUser(String userId) throws Exception {
+
+        UserEntity userEntity = userRepository.findByUserId(userId);
         userRepository.delete(userEntity);
+
     }
 
+    @Override
     public List<UserDto> getUsers() {
+
         Iterable<UserEntity> users = userRepository.findAll();
 
         List<UserDto> ans = new ArrayList<>();
